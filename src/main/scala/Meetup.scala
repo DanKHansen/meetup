@@ -4,18 +4,24 @@ import java.time.{DayOfWeek, LocalDate}
 case class Meetup(month: Int, year: Int):
 
    def day(dayOfWeek: Int, schedule: Schedule): LocalDate =
-      val MonthSeq = createMonthMap(year, month).toSeq.sortBy(_._1)
-      val ym = java.time.YearMonth.of(year, month)
+      val monthSeq = createMonthSeq(year, month).sortBy(_._1)
+      val sa = monthSeq.sliding(7, 7).toArray
       val dayOfMonth = schedule match
-         case Schedule.Teenth => MonthSeq.filter(p => p._1 > 12 && p._1 < 20).filter(p => p._2 == dayOfWeek).head._1
-         case Schedule.First  => MonthSeq.filter(p => p._1 >= 1 && p._1 < 8).filter(p => p._2 == dayOfWeek).head._1
-         case Schedule.Second => MonthSeq.filter(p => p._1 >= 8 && p._1 < 15).filter(p => p._2 == dayOfWeek).head._1
-         case Schedule.Third  => MonthSeq.filter(p => p._1 >= 15 && p._1 < 22).filter(p => p._2 == dayOfWeek).head._1
-         case Schedule.Fourth => MonthSeq.filter(p => p._1 >= 22 && p._1 < 28).filter(p => p._2 == dayOfWeek).head._1
-         case Schedule.Last   => MonthSeq.filter(p => p._1 >= 28 && p._1 < ym.lengthOfMonth).filter(p => p._2 == dayOfWeek).head._1
-
-
+         case Schedule.Teenth => monthSeq.filter(p => p._1 > 12 & p._1 < 20).filter(p => p._2 == dayOfWeek).head._1
+         case Schedule.First  => sa(0).filter(p => p._2 == dayOfWeek).head._1
+         case Schedule.Second => sa(1).filter(p => p._2 == dayOfWeek).head._1
+         case Schedule.Third  => sa(2).filter(p => p._2 == dayOfWeek).head._1
+         case Schedule.Fourth => sa(3).filter(p => p._2 == dayOfWeek).head._1
+         case Schedule.Last   => monthSeq.filter(p => p._2 == dayOfWeek).last._1
       LocalDate.of(year, month, dayOfMonth)
+
+   private def createMonthSeq(year: Int, month: Int): Seq[(Int, Int)] =
+      val firstDayOfMonth = LocalDate.of(year, month, 1)
+      val lastDayOfMonth = firstDayOfMonth.lengthOfMonth()
+      (1 to lastDayOfMonth).map { day =>
+         val date = firstDayOfMonth.plusDays(day - 1)
+         day -> date.getDayOfWeek.getValue
+      }
 
 object Schedule extends Enumeration:
    type Schedule = Value
@@ -29,11 +35,3 @@ object Meetup:
    val Fri: Int = DayOfWeek.FRIDAY.getValue
    val Sat: Int = DayOfWeek.SATURDAY.getValue
    val Sun: Int = DayOfWeek.SUNDAY.getValue
-
-def createMonthMap(year: Int, month: Int): Map[Int, Int] =
-   val firstDayOfMonth = LocalDate.of(year, month, 1)
-   val lastDayOfMonth = firstDayOfMonth.lengthOfMonth()
-   (1 to lastDayOfMonth).map { day =>
-      val date = firstDayOfMonth.plusDays(day - 1)
-      day -> date.getDayOfWeek.getValue
-   }.toMap
